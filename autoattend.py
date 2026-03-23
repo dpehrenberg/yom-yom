@@ -18,15 +18,6 @@ COL_ENTRY  = 43  # כניסה  - time in
 COL_EXIT   = 39  # יציאה  - time out
 COL_HOURS  = 27  # שעות בפועל - actual hours
 
-DAY_HE_TO_EN = {
-    "ראשון":  "Sunday",
-    "שני":    "Monday",
-    "שלישי":  "Tuesday",
-    "רביעי":  "Wednesday",
-    "חמישי":  "Thursday",
-    "שישי":   "Friday",
-    "שבת":    "Saturday",
-}
 
 
 def xl_time_str(val: float) -> str:
@@ -73,7 +64,7 @@ def parse_attendance(filepath: Path):
 
         records.append({
             "date":     xl_date_str(entry_val, wb.datemode),
-            "day":      DAY_HE_TO_EN.get(str(day_val).strip(), str(day_val).strip()),
+            "day":      str(day_val).strip(),
             "entry":    xl_time_str(entry_val),
             "exit":     xl_time_str(exit_val),
             "duration": duration_str(entry_val, exit_val),
@@ -81,19 +72,36 @@ def parse_attendance(filepath: Path):
     return records
 
 
+_L = "\u200e"  # LTR mark — anchors surrounding spaces to left-to-right context
+
+def _col(text, width, align="left"):
+    """Pad text to fixed width and append an LTR mark so trailing spaces stay LTR."""
+    if align == "right":
+        padded = text.rjust(width)
+    else:
+        padded = text.ljust(width)
+    return padded + _L
+
+
 def print_attendance(records: list):
-    header = f"{'DATE':<12}  {'DAY':<10}  {'IN':>5}  {'OUT':>5}  {'TOTAL':>6}"
-    sep    = "-" * len(header)
+    sep = _L + "-" * 46
     print()
-    print(header)
+    print(_L
+          + _col("תאריך",  10) + "  "
+          + _col("יום",     6) + "  "
+          + _col("כניסה",   5, "right") + "  "
+          + _col("יציאה",   5, "right") + "  "
+          + _col('סה"כ',    5, "right"))
     print(sep)
     for r in records:
-        print(
-            f"{r['date']:<12}  {r['day']:<10}  {r['entry']:>5}  "
-            f"{r['exit']:>5}  {r['duration']:>6}"
-        )
+        print(_L
+              + _col(r["date"],     10) + "  "
+              + _col(r["day"],       6) + "  "
+              + _col(r["entry"],     5, "right") + "  "
+              + _col(r["exit"],      5, "right") + "  "
+              + _col(r["duration"],  5, "right"))
     print(sep)
-    print(f"  {len(records)} day(s) listed\n")
+    print(_L + f"  סך הכל {len(records)} ימים\n")
 
 
 def main():
@@ -103,12 +111,12 @@ def main():
 
     filepath = Path(args.file)
     if not filepath.exists():
-        print(f"Error: File not found: {filepath}")
+        print(f"שגיאה: הקובץ לא נמצא: {filepath}")
         sys.exit(1)
 
     records = parse_attendance(filepath)
     if not records:
-        print("No attendance records found.")
+        print("לא נמצאו רשומות נוכחות.")
         sys.exit(0)
 
     print_attendance(records)
