@@ -17,6 +17,7 @@ COL_DAY    = 56  # יום    - day of week (Hebrew)
 COL_ENTRY  = 43  # כניסה  - time in
 COL_EXIT   = 39  # יציאה  - time out
 COL_HOURS  = 27  # שעות בפועל - actual hours
+COL_REPORT = 51  # קוד דיווח - report type
 
 DAY_ABBREV = {
     "ראשון": "א",
@@ -72,9 +73,10 @@ def parse_attendance(filepath: Path):
     records = []
     for i in range(ws.nrows):
         row = ws.row_values(i)
-        day_val   = row[COL_DAY]   if ws.ncols > COL_DAY   else ""
-        entry_val = row[COL_ENTRY] if ws.ncols > COL_ENTRY else ""
-        exit_val  = row[COL_EXIT]  if ws.ncols > COL_EXIT  else ""
+        day_val    = row[COL_DAY]    if ws.ncols > COL_DAY    else ""
+        entry_val  = row[COL_ENTRY]  if ws.ncols > COL_ENTRY  else ""
+        exit_val   = row[COL_EXIT]   if ws.ncols > COL_EXIT   else ""
+        report_val = row[COL_REPORT] if ws.ncols > COL_REPORT else ""
 
         # Only keep rows that have an entry time (float = Excel datetime)
         if not isinstance(entry_val, float):
@@ -83,6 +85,7 @@ def parse_attendance(filepath: Path):
         date_ddmm = xl_date_str(entry_val, wb.datemode)
         records.append({
             "day_col":  fmt_day_col(str(day_val).strip(), date_ddmm),
+            "report":   str(report_val).strip() if report_val else "",
             "entry":    xl_time_str(entry_val),
             "exit":     xl_time_str(exit_val),
             "duration": duration_str(entry_val, exit_val),
@@ -102,20 +105,22 @@ def _col(text, width, align="left"):
 
 
 def print_attendance(records: list):
-    sep = _L + "-" * 38
+    sep = _L + "-" * 58
     print()
     print(_L
-          + _col("יום",    13) + "  "
-          + _col("כניסה",   5, "right") + "  "
-          + _col("יציאה",   5, "right") + "  "
-          + _col('סה"כ',    5, "right"))
+          + _col("יום",        13) + "  "
+          + _col("כניסה",       5, "right") + "  "
+          + _col("יציאה",       5, "right") + "  "
+          + _col('סה"כ',        5, "right") + "  "
+          + _col("סוג דיווח",  17))
     print(sep)
     for r in records:
         print(_L
               + _col(r["day_col"],  13) + "  "
               + _col(r["entry"],     5, "right") + "  "
               + _col(r["exit"],      5, "right") + "  "
-              + _col(r["duration"],  5, "right"))
+              + _col(r["duration"],  5, "right") + "  "
+              + _col(r["report"],   17))
     print(sep)
     print(_L + f"  סך הכל {len(records)} ימים\n")
 
