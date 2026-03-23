@@ -18,6 +18,16 @@ COL_ENTRY  = 43  # כניסה  - time in
 COL_EXIT   = 39  # יציאה  - time out
 COL_HOURS  = 27  # שעות בפועל - actual hours
 
+DAY_ABBREV = {
+    "ראשון": "א",
+    "שני":   "ב",
+    "שלישי": "ג",
+    "רביעי": "ד",
+    "חמישי": "ה",
+    "שישי":  "ו",
+    "שבת":   "שבת",
+}
+
 
 
 def xl_time_str(val: float) -> str:
@@ -42,9 +52,17 @@ def duration_str(entry: float, exit_: float) -> str:
 
 
 def xl_date_str(entry_val: float, datemode: int) -> str:
-    """Return DD/MM/YYYY derived from the integer (date) part of the entry timestamp."""
+    """Return DD/MM derived from the integer (date) part of the entry timestamp."""
     t = xlrd.xldate_as_tuple(entry_val, datemode)
-    return f"{t[2]:02d}/{t[1]:02d}/{t[0]}"
+    return f"{t[2]:02d}/{t[1]:02d}"
+
+
+def fmt_day_col(day_he: str, date_ddmm: str) -> str:
+    """Return combined day column: 'יום א DD/MM' or 'שבת DD/MM'."""
+    abbrev = DAY_ABBREV.get(day_he, day_he)
+    if abbrev == "שבת":
+        return f"שבת {date_ddmm}"
+    return f"יום {abbrev} {date_ddmm}"
 
 
 def parse_attendance(filepath: Path):
@@ -62,9 +80,9 @@ def parse_attendance(filepath: Path):
         if not isinstance(entry_val, float):
             continue
 
+        date_ddmm = xl_date_str(entry_val, wb.datemode)
         records.append({
-            "date":     xl_date_str(entry_val, wb.datemode),
-            "day":      str(day_val).strip(),
+            "day_col":  fmt_day_col(str(day_val).strip(), date_ddmm),
             "entry":    xl_time_str(entry_val),
             "exit":     xl_time_str(exit_val),
             "duration": duration_str(entry_val, exit_val),
@@ -84,19 +102,17 @@ def _col(text, width, align="left"):
 
 
 def print_attendance(records: list):
-    sep = _L + "-" * 46
+    sep = _L + "-" * 38
     print()
     print(_L
-          + _col("תאריך",  10) + "  "
-          + _col("יום",     6) + "  "
+          + _col("יום",    13) + "  "
           + _col("כניסה",   5, "right") + "  "
           + _col("יציאה",   5, "right") + "  "
           + _col('סה"כ',    5, "right"))
     print(sep)
     for r in records:
         print(_L
-              + _col(r["date"],     10) + "  "
-              + _col(r["day"],       6) + "  "
+              + _col(r["day_col"],  13) + "  "
               + _col(r["entry"],     5, "right") + "  "
               + _col(r["exit"],      5, "right") + "  "
               + _col(r["duration"],  5, "right"))
